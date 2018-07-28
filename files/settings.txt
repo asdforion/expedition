@@ -1,0 +1,7 @@
+--/settings/--
+
+startingCharacters:4
+textSpeed:0
+z:100
+
+--/end/--
