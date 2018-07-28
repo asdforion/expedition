@@ -563,6 +563,10 @@ public class Character {
         }
         return longest;
     }
+    
+    public boolean isFallen() {
+    	return hasEffect(Effect.FALLEN);
+    }
 
     public boolean hasEffect(Effect check) {
         if (status.size() > 0) {
