@@ -15,9 +15,9 @@ public enum Ability {
             null,
             null),
     ChakraBlock("Chakra Block", "Strike the target's soul, dealing 15 + (0.6 * Spirit) Monk Damage and blocking their chakras for 4 turns. "
-            + "The chakra block reduces their MAGIC stat by 25%.",
+            + "The chakra block reduces their Intelligence stat by 25%.",
             Type.Monk, 15, true, 15, Stat.SPI, 0.6, false,
-            new StatusEffect[]{new StatusEffect("Blocked Chakras", "Soul is blocked by a precise strike. Magic is reduced by 20%", Effect.MAGPERCENT, 4, 0.8, null, true, false)},
+            new StatusEffect[]{new StatusEffect("Blocked Chakras", "Soul is blocked by a precise strike. Intelligence is reduced by 20%", Effect.INTPERCENT, 4, 0.8, null, true, false)},
             null),
     Prayer("Prayer", "Pray for the target, healing them for 15 + (2.0 * Spirit).",
             Type.Priest, 15, true, -15, Stat.SPI, -2.0, false,
@@ -42,12 +42,12 @@ public enum Ability {
             null,
             new StatusEffect[]{new StatusEffect("Quickshot", "In the zone! Your speed is increased by 15%.", Effect.SPDPERCENT, 3, 1.15, null, true, false)}),
     FireBlast("Fireblast", "Summon a ball of fire to fly at your target, dealing 20 + (0.5 * Magic) Wizard Damage and burning them for 9 Wizard damage over three turns.",
-            Type.Wizard, 20, true, 20, Stat.MAG, 0.5, false,
+            Type.Wizard, 20, true, 20, Stat.INT, 0.5, false,
             new StatusEffect[]{new StatusEffect("Burning", "ON FIRE! Taking 3 Wizard damage per turn.", Effect.DAMAGETICK, 3, 3.0, Type.Wizard, true, false)},
             null),
     FoolsCurse("Fool's Curse", "Curse the enemy opponent with foolishness, dealing 8 + (0.3 * Magic) Warlock damage. "
             + "The curse lasts for 3 turns, dealing 6 damage per turn and reducing the target's intelligence by 20% for the duration.",
-            Type.Warlock, 15, true, 8, Stat.MAG, 0.3, false,
+            Type.Warlock, 15, true, 8, Stat.INT, 0.3, false,
             new StatusEffect[]{new StatusEffect("Fool's Curse - Addled Brain", "Take 6 Warlock damage every turn.", Effect.DAMAGETICK, 3, 6.0, Type.Warlock, true, false),
                 new StatusEffect("Fool's Curse - Moronification", "Intelligence is reduced by 20%.", Effect.INTPERCENT, 3, 0.8, null, true, false)},
             null);

@@ -41,7 +41,11 @@ public class Team {
     }
 
     public Character get(int which) {
-        return team.get(which - 1);
+        if (which > 0 && (which - 1) < (team.size())) {
+            return team.get(which - 1);
+        } else {
+            return null;
+        }
     }
 
     public void updateBirthday(Date date) {
@@ -53,8 +57,27 @@ public class Team {
     }
 
     public boolean contains(Character x) {
-        return team.contains(x);
+        if (x != null) {
+            return team.contains(x);
+        } else {
+            return false;
+        }
+    }
 
+    public boolean removeTraveler(Character x) {
+        if (x != null) {
+            boolean b = team.remove(x);
+            
+            if (b) {
+                return b;
+            } else {
+                error("Error removing character " + x.getName() + " from team " + this.getName());
+                return b;
+            }
+        } else {
+            error("Error removing character \\ doesn't exist \\ from team " + this.getName());
+            return false;
+        }
     }
 
     //Prints ALL current travelers.
@@ -89,24 +112,6 @@ public class Team {
                 + race.getName() + getRemainderSpaces(race.getName(), longestTravelerRace()) + " "
                 + type.toString() + "."
                 + getRemainderSpaces(type.toString(), longestTravelerType()));
-    }
-
-    public void printTravelerVerbose(Character character, Date date) {
-        if (character != null) {
-            int untilBirthday = date.daysUntil(character.getBirthday());
-            error(character.getName() + " >> \n");
-
-            tprintln("is a " + character.getAge() + " year old " + character.getRace() + " " + character.getGenderString() + ".");
-            tprintln(((character.getSex() == Gender.FEMALE) ? "Her" : "His") + " birthday is on "
-                    + character.getBirthday() + ". That's " + ((untilBirthday == 0) ? ("today! Happy Birthday!") : ("in " + untilBirthday + " days.")) + "\n");
-
-            tprintln("Level " + character.getLevel() + " " + character.getType() + " (" + character.getExperienceCurr() + "/" + character.getExperienceMax() + ")");
-            tprintln("Health: " + character.getHealthCurr() + "/" + character.getHealthMax() + " | Energy: " + character.getEnergyCurr() + "/" + character.getEnergyMax() + "\n");
-
-            tprintln(character.getIntelligence() + " Intelligence; " + character.getAgility() + " Agility; " + character.getStrength() + " Strength.");
-            tprintln(character.getSpirit() + " Spirit; " + character.getMagic() + " Magic; " + character.getSpeed() + " Speed.");
-            printAbilities(character);
-        }
     }
 
     //Returns the length of the longest traveler name.
@@ -177,12 +182,6 @@ public class Team {
         return birthdays;
     }
 
-    public void printAbilities(Character character) {
-        if (character != null) {
-            character.printAbilities();
-        }
-    }
-
     public boolean hasConsciousMembers() {
         for (Character c : team) {
             if (!c.hasEffect(Effect.FALLEN)) {
@@ -191,15 +190,13 @@ public class Team {
         }
         return false;
     }
-    
-    public ArrayList<Character> list(){
+
+    public ArrayList<Character> list() {
         return team;
     }
 
     public String getName() {
         return name;
     }
-    
-    
 
 }

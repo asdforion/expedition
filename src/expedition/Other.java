@@ -102,6 +102,19 @@ public class Other {
         }
     }
 
+    public static String capitallizeFirsts(String in) {
+        String build = "";
+        for (String i : in.split("\\s+")) {
+            build = build + i.substring(0, 1).toUpperCase() + i.substring(1) + " ";
+        }
+        return build;
+
+    }
+
+    public static String capitallizeFirst(String in) {
+        return in.substring(0, 1).toUpperCase() + in.substring(1);
+    }
+
     public static String repeatStr(String in, int numTimes) {
         String build = "";
         for (int i = 0; i < numTimes; i++) {
@@ -130,8 +143,7 @@ public class Other {
         }
         return "";
     }
-*/
-
+     */
     public static void br() {
         System.out.print("\n");
     }
@@ -141,10 +153,17 @@ public class Other {
             System.out.print("\n");
         }
     }
-    
-    public static void error(String in){
+
+    public static void error(String in) {
         br();
         tprintln(in);
+    }
+
+    public static void error(String in, boolean hidden) {
+        if (!hidden) {
+            br();
+            tprintln(in);
+        }
     }
 
     public static void print(String in) {
@@ -155,14 +174,32 @@ public class Other {
         System.out.println(in);
     }
 
+    public static void test(String in) {
+        println("-///- TEST -///- " + in);
+    }
+
     public static void tprint(String in) {
         printTab();
         print(in);
     }
 
+    public static void tprint(String in, boolean hidden) {
+        if (!hidden) {
+            printTab();
+            print(in);
+        }
+    }
+
     public static void tprintln(String in) {
         printTab();
         println(in);
+    }
+
+    public static void tprintln(String in, boolean hidden) {
+        if (!hidden) {
+            printTab();
+            println(in);
+        }
     }
 
 }

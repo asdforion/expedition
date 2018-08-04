@@ -10,17 +10,20 @@ import static expedition.Other.*;
 import expedition.game_tools.*;
 import expedition.game_tools.StatusEffect.*;
 import expedition.game_tools.items.*;
+import expedition.game_tools.items.Item.ItemType;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Random;
 import java.util.Scanner;
 
 public class Character {
 
     public enum Stat {
-        INT, AGI, STR, SPI, MAG, SPD, None;
+        INT, AGI, STR, SPI, SPD, None;
         //Intelligence, Agility, Strength, Spirit, Magic
     }
 
+    public static final String FALLEN = "Fallen";
     public static final double VERYEFFECTIVE = 1.5;
     public static final double NOTEFFECTIVE = 0.5;
 
@@ -49,13 +52,13 @@ public class Character {
     private int agility;
     private int strength;
     private int spirit;
-    private int magic;
 
     private int speed;
 
     private Item equippedWeapon;
     private Item equippedArmor;
     private Item equippedTrinket;
+    private Item equippedConsumable;
 
     private Type type;
 
@@ -83,7 +86,6 @@ public class Character {
         agility = race.getAverageAgi() + rand.nextInt(3) - 1;
         strength = race.getAverageStr() + rand.nextInt(3) - 1;
         spirit = rand.nextInt(4) + 3;
-        magic = rand.nextInt(4) + 3;
         speed = rand.nextInt(20) + 5;
         level = 1;
 
@@ -123,10 +125,6 @@ public class Character {
 
     public int getSpirit() {
         return spirit;
-    }
-
-    public int getMagic() {
-        return magic;
     }
 
     public int getSpeed() {
@@ -187,6 +185,14 @@ public class Character {
 
     public Item getEquippedTrinket() {
         return equippedTrinket;
+    }
+
+    public Ability[] getAbilities() {
+        return abilities;
+    }
+
+    public Item getEquippedConsumable() {
+        return equippedConsumable;
     }
 
     public Type getType() {
@@ -264,22 +270,6 @@ public class Character {
         return (int) Math.round(calc);
     }
 
-    public int getStatMagic() {
-        double calc = (double) magic;
-
-        for (StatusEffect i : status) {
-            if (i.getEffect() == Effect.MAGPERCENT) {
-                calc = calc * i.getIntensity();
-            }
-        }
-        for (StatusEffect i : status) {
-            if (i.getEffect() == Effect.MAGFLAT) {
-                calc = calc + i.getIntensity();
-            }
-        }
-        return (int) Math.round(calc);
-    }
-
     public int getStatSpeed() {
         double calc = (double) speed;
 
@@ -302,10 +292,15 @@ public class Character {
         return takeDamage(damage, damageType, false, true);
     }
 
+    public int takeDamage(int damage, Type damageType, boolean hidden) {
+        return takeDamage(damage, damageType, false, hidden);
+    }
+
     //Deals damage to the current character. Returns the amount of damage done.
     //Damage is affected by any ARMOR status effects.
-    public int takeDamage(int damage, Type damageType, boolean ignoreDamage, boolean hidden) {
+    public int takeDamage(int damage, Type damageType, boolean ignoreArmor, boolean hidden) {
         double calc = damage;
+        int healthOg = healthCurr;
 
         if (this.getType().isWeakTo(damageType)) {
             damage *= VERYEFFECTIVE;
@@ -313,27 +308,133 @@ public class Character {
             damage *= NOTEFFECTIVE;
         }
 
-        if (ignoreDamage == false) {
+        if (ignoreArmor == false) { //IGNORES DAMAGEBLOCKED
             for (StatusEffect i : status) {
-                if (i.getEffect() == Effect.DAMAGETAKENPERCENT) {
+                if (i.getEffect() == Effect.DAMAGEBLOCKEDPERCENT) {
                     calc = calc * i.getIntensity();
                 }
             }
             for (StatusEffect i : status) {
-                if (i.getEffect() == Effect.DAMAGETAKENFLAT) {
+                if (i.getEffect() == Effect.DAMAGEBLOCKEDFLAT) {
                     calc = calc + i.getIntensity();
                 }
             }
         }
+        for (StatusEffect i : status) {
+            if (i.getEffect() == Effect.DAMAGETAKENPERCENT) {
+                calc = calc * i.getIntensity();
+            }
+        }
+        for (StatusEffect i : status) {
+            if (i.getEffect() == Effect.DAMAGETAKENFLAT) {
+                calc = calc + i.getIntensity();
+            }
+        }
 
         healthCurr = healthCurr - ((int) Math.round(calc));
+        tprintln(getName() + " has taken " + (healthOg - healthCurr) + " damage.", hidden);
 
         //death
         if (healthCurr <= 0) {
             healthCurr = 0;
-            addStatus(new StatusEffect("Knocked out.", "Reached 0 health, and is incapacitated until healed.", Effect.FALLEN, -1, 1.0, null, false, false));
+            addStatus(new StatusEffect(FALLEN, "Reached 0 health, and is incapacitated until healed.", Effect.FALLEN, -1, 1.0, null, false, false));
         }
         return ((int) Math.round(calc));
+    }
+
+    public boolean spendEnergy(int energy) {
+        return spendEnergy(energy, true);
+    }
+
+    public boolean spendEnergy(int energy, boolean hidden) {
+        double calc = energy;
+        int energyOg = energyCurr;
+
+        for (StatusEffect i : status) {
+            if (i.getEffect() == Effect.ENERGYSPENTPERCENT) {
+                calc = calc * i.getIntensity();
+            }
+        }
+        for (StatusEffect i : status) {
+            if (i.getEffect() == Effect.ENERGYSPENTFLAT) {
+                calc = calc + i.getIntensity();
+            }
+        }
+
+        if (energyCurr > ((int) Math.round(calc))) { //enough energy to spend!
+            energyCurr = energyCurr - ((int) Math.round(calc));
+            tprintln(getName() + " has used " + (energyOg - healthCurr) + " energy.", hidden);
+            return true;
+        } else {
+            tprintln(getName() + " does not have enough energy!", hidden);
+            return false;
+        }
+
+    }
+
+    public void printTravelerVerbose(Date date) {
+
+        int untilBirthday = date.daysUntil(getBirthday());
+        error(getName() + " >> \n");
+
+        tprintln("is a " + getAge() + " year old " + getRace() + " " + getGenderString() + ".");
+        tprintln(((getSex() == Gender.FEMALE) ? "Her" : "His") + " birthday is on "
+                + getBirthday() + ". That's " + ((untilBirthday == 0) ? ("today! Happy Birthday!") : ("in " + untilBirthday + " days.")) + "\n");
+
+        tprintln("Level " + getLevel() + " " + getType() + " (" + getExperienceCurr() + "/" + getExperienceMax() + ")");
+        tprintln("Health: " + getHealthCurr() + "/" + getHealthMax() + " | Energy: " + getEnergyCurr() + "/" + getEnergyMax() + "\n");
+
+        if (status.size() > 0) {
+            this.printStatus();
+            println("");
+        }
+
+        tprintln("Weapon: ["
+                + (equippedWeapon == null ? "none" : equippedWeapon.getName())
+                + "]");
+
+        tprintln("Armor: [" + (equippedArmor == null ? "none" : equippedArmor.getName()) + "]");
+        tprintln("Trinket: [" + (equippedTrinket == null ? "none" : equippedTrinket.getName()) + "]");
+        tprintln("Consumable: [" + (equippedConsumable == null ? "none" : equippedConsumable.getName()) + "]");
+        println("");
+
+        tprintln(getIntelligence() + statCalcDiff("INT") + " Intelligence" + "; " + getAgility() + statCalcDiff("AGI") + " Agility" + "; " + getStrength() + statCalcDiff("STR") + " Strength" + ".");
+        tprintln(getSpirit() + statCalcDiff("SPI") + " Spirit" + "; " + getSpeed() + statCalcDiff("SPD") + " Speed" + ".");
+        this.printAbilities();
+
+    }
+
+    public String statCalcDiff(String stat) {
+        int diff = 0;
+        switch (stat) {
+            case "INT":
+                diff = this.getStatIntelligence() - this.getIntelligence();
+                break;
+            case "STR":
+                diff = this.getStatStrength() - this.getStrength();
+                break;
+            case "SPI":
+                diff = this.getStatSpirit() - this.getSpirit();
+                break;
+            case "AGI":
+                diff = this.getStatAgility() - this.getAgility();
+                break;
+            case "SPD":
+                diff = this.getStatSpeed() - this.getSpeed();
+                break;
+        }
+        String ret = "";
+        if (diff == 0) {
+            return ret;
+        } else {
+            return (" (" + (diff > 0 ? "+" : "") + diff + ")");
+        }
+    }
+
+    public void printStatus() {
+        for (StatusEffect e : status) {
+            tprintln(e.getName() + " | " + e.getDescription());
+        }
     }
 
     public int healDamage(int heal) {
@@ -350,6 +451,7 @@ public class Character {
             }
         }
         healthCurr = healthCurr + ((int) Math.round(calc));
+        this.removeStatus(FALLEN);
 
         //max
         if (healthCurr > healthMax) {
@@ -409,7 +511,20 @@ public class Character {
     }
 
     public void addStatus(StatusEffect in) {
+        for (StatusEffect i : status) {
+
+            if (i.getName().equals(in.getName())) {
+                removeStatus(i.getName());
+                break;
+            }
+        }
         status.add(in);
+    }
+
+    public void addStatus(Collection<StatusEffect> in) {
+        for (StatusEffect i : in) {
+            addStatus(i);
+        }
     }
 
     //removes ALL status effects that relate to individual fight situations.
@@ -563,9 +678,9 @@ public class Character {
         }
         return longest;
     }
-    
+
     public boolean isFallen() {
-    	return hasEffect(Effect.FALLEN);
+        return hasEffect(Effect.FALLEN);
     }
 
     public boolean hasEffect(Effect check) {
@@ -577,6 +692,299 @@ public class Character {
             }
         }
         return false;
+    }
+
+    public void removeStatus(String str) {
+        ArrayList<StatusEffect> toRemove = new ArrayList<>();
+        for (StatusEffect i : status) {
+            if (i.getName().equals(str)) {
+                toRemove.add(i);
+            }
+        }
+        for (StatusEffect i : toRemove) {
+            status.remove(i);
+        }
+    }
+
+    public void removeItemStatus(Item ite) {
+        ArrayList<StatusEffect> toRemove = new ArrayList<>();
+        for (StatusEffect i : status) {
+            if (i.getName().equals("[" + ite.getName() + "]")) {
+                toRemove.add(i);
+            }
+        }
+        for (StatusEffect i : toRemove) {
+            status.remove(i);
+        }
+    }
+
+    public Item unequipItem(Item ite) {
+        return unequipItem(ite, true);
+    }
+
+    //unequips an item.
+    public Item unequipItem(Item ite, boolean hidden) {
+        Item out;
+        if (ite != null && null != ite.getType()) {
+            switch (ite.getType()) {
+                case Armor:
+                    if (equippedArmor == null) {
+                        break;
+                    } else if (equippedArmor == ite) {
+                        removeItemStatus(ite);
+                        out = this.equippedArmor;
+                        equippedArmor = null;
+                        tprintln(getName() + " has unequipped [" + out.getName() + "].", hidden);
+                        return out;
+                    } else {
+                        tprintln(getName() + " doesn't have [" + ite.getName() + "].", hidden);
+                        return null;
+                    }
+                case Trinket:
+                    if (equippedTrinket == null) {
+                        break;
+                    } else if (equippedTrinket == ite) {
+                        removeItemStatus(ite);
+                        out = this.equippedTrinket;
+                        equippedTrinket = null;
+                        tprintln(getName() + " has unequipped [" + out.getName() + "].", hidden);
+                        return out;
+                    } else {
+                        tprintln(getName() + " doesn't have [" + ite.getName() + "].", hidden);
+                        return null;
+                    }
+                case Weapon:
+                    if (this.equippedWeapon == null) {
+                        break;
+                    } else if (equippedWeapon == ite) {
+                        removeItemStatus(ite);
+                        out = equippedWeapon;
+                        equippedWeapon = null;
+                        tprintln(getName() + " has unequipped [" + out.getName() + "].", hidden);
+                        return out;
+                    } else {
+                        tprintln(getName() + " doesn't have [" + ite.getName() + "].", hidden);
+                        return null;
+                    }
+                case Consumable:
+                    if (this.equippedConsumable == null) {
+                        break;
+                    } else if (equippedConsumable == ite) {
+                        out = equippedConsumable;
+                        equippedConsumable = null;
+                        tprintln(getName() + " has unequipped [" + out.getName() + "].", hidden);
+                        return out;
+                    } else {
+                        tprintln(getName() + " doesn't have [" + ite.getName() + "].", hidden);
+                        return null;
+                    }
+            }
+        }
+        return null;
+    }
+
+    public Item unequipItem(String ite) {
+        ArrayList<Item> ites = new ArrayList<>();
+        ites.add(this.equippedArmor);
+        ites.add(this.equippedConsumable);
+        ites.add(this.equippedTrinket);
+        ites.add(this.equippedWeapon);
+
+        return unequipItem(Item.parseName(ite), false);
+    }
+
+    public Item unequipItem(ItemType ite) {
+        return unequipItem(ite, true);
+    }
+
+    //unequips an item in ItemType slot.
+    public Item unequipItem(ItemType ite, boolean hidden) {
+        Item out;
+        switch (ite) {
+            case Weapon:
+                if (equippedWeapon == null) {
+                    return null;
+                } else {
+                    removeItemStatus(equippedWeapon);
+                    out = equippedWeapon;
+                    equippedWeapon = null;
+                    tprintln(getName() + " has unequipped [" + out.getName() + "].", hidden);
+                    return out;
+                }
+            case Armor:
+                if (equippedArmor == null) {
+                    return null;
+                } else {
+                    removeItemStatus(equippedArmor);
+                    out = equippedArmor;
+                    equippedArmor = null;
+                    tprintln(getName() + " has unequipped [" + out.getName() + "].", hidden);
+                    return out;
+                }
+            case Trinket:
+                if (equippedTrinket == null) {
+                    return null;
+                } else {
+                    removeItemStatus(equippedTrinket);
+                    out = equippedTrinket;
+                    equippedTrinket = null;
+                    tprintln(getName() + " has unequipped [" + out.getName() + "].", hidden);
+                    return out;
+                }
+            case Consumable:
+                if (equippedConsumable == null) {
+                    return null;
+                } else {
+                    removeItemStatus(equippedConsumable);
+                    out = equippedConsumable;
+                    equippedConsumable = null;
+                    tprintln(getName() + " has unequipped [" + out.getName() + "].", hidden);
+                    return out;
+                }
+        }
+        return null;
+    }
+
+    public void equipItem(Item ite, Inventory inv) {
+        equipItem(ite, inv, true);
+    }
+
+    public void equipItem(Item ite, Inventory inv, boolean hidden) {
+        Item out;
+
+        if (ite != null && null != ite.getType()) {
+            switch (ite.getType()) {
+                case Armor:
+                    if (equippedArmor != null) {
+                        out = unequipItem(ite.getType());
+                        inv.addItem(out);
+                        tprintln(getName() + " has unequipped [" + out.getName() + "], and has equipped [" + ite.getName() + "] in its place.", hidden);
+                    } else {
+                        tprintln(getName() + " has equipped [" + ite.getName() + "].", hidden);
+                    }
+                    equippedArmor = ite;
+                    addStatus(ite.getEffects());
+                    break;
+                case Trinket:
+                    if (equippedTrinket != null) {
+                        out = unequipItem(ite.getType());
+                        inv.addItem(out);
+                        tprintln(getName() + " has unequipped [" + out.getName() + "], and has equipped [" + ite.getName() + "] in its place.", hidden);
+                    } else {
+                        tprintln(getName() + " has equipped [" + ite.getName() + "].", hidden);
+                    }
+                    this.equippedTrinket = ite;
+                    addStatus(ite.getEffects());
+                    break;
+                case Weapon:
+                    if (equippedWeapon != null) {
+                        out = unequipItem(ite.getType());
+                        inv.addItem(out);
+                        tprintln(getName() + " has unequipped [" + out.getName() + "], and has equipped [" + ite.getName() + "] in its place.", hidden);
+                    } else {
+                        tprintln(getName() + " has equipped [" + ite.getName() + "].", hidden);
+                    }
+                    equippedWeapon = ite;
+                    addStatus(ite.getEffects());
+                    break;
+                case Consumable:
+                    if (equippedConsumable != null) {
+                        out = unequipItem(ite.getType());
+                        inv.addItem(out);
+                        tprintln(getName() + " has unequipped [" + out.getName() + "], and has equipped [" + ite.getName() + "] in its place.", hidden);
+                    } else {
+                        tprintln(getName() + " has equipped [" + ite.getName() + "].", hidden);
+                    }
+                    equippedConsumable = ite;
+                    break;
+                default:
+                    tprintln("[" + ite.getName() + "] is not equippable.", hidden);
+                    inv.addItem(ite);
+                    break;
+            }
+        } else {
+            tprintln("No such item exists!", hidden);
+        }
+    }
+
+    public void equipItem(String ite, Inventory inv) {
+        equipItem(Item.parseName(ite), inv, false);
+    }
+
+    public void consumeItem(String ite, Inventory inv) {
+
+        Item item = null;
+        item = Item.parseName(ite);
+        if (item == null) {
+            ArrayList<Item> candidates = new ArrayList<>();
+            for (Item i : inv.list().keySet()) {
+                if (i.getName().contains(ite)) {
+                    candidates.add(i);
+                }
+            }
+            if (candidates.size() == 1) {
+                item = candidates.get(0);
+                consumeItem(item, false);
+            } else {
+                tprintln("[" + ite + "] doesn't exist!");
+            }
+
+        } else {
+            consumeItem(item, false);
+        }
+
+    }
+
+    public void consumeItem(Item ite) {
+        consumeItem(ite, false);
+    }
+
+    public void consumeItem(Item ite, boolean hidden) {
+        if (!isFallen()) {
+            int ogHealth = this.getHealthCurr();
+            int healthRestored;
+            int ogEnergy = this.getEnergyCurr();
+            int energyRestored;
+            String restored = "";
+            if (ite == null) {
+                return;
+            } else if (ite.getType() == ItemType.Consumable) {
+                this.restoreEnergy(ite.getEnergyRestored());
+                this.healDamage(ite.getHealthRestored());
+                healthRestored = this.getHealthCurr() - ogHealth;
+                energyRestored = this.getEnergyCurr() - ogEnergy;
+
+                if (healthRestored > 0 && energyRestored < 1) {
+                    restored = " It restored " + healthRestored + " health.";
+                } else if (healthRestored > 0 && energyRestored > 0) {
+                    restored = " It restored " + healthRestored + " health and " + energyRestored + " energy.";
+                } else if (healthRestored < 1 && energyRestored > 0) {
+                    restored = " It restored " + energyRestored + " energy.";
+                }
+
+                this.addStatus(ite.getEffects());
+                tprintln(getName() + " has consumed the [" + ite.getName() + "]." + restored, hidden);
+
+            } else {
+                tprintln("[" + ite.getName() + "] is not consumable.", hidden);
+            }
+        } else {
+            tprintln(getName() + " can't consume that; they're knocked out.", hidden);
+        }
+    }
+
+    public boolean hasUsableItem() {
+        return (equippedConsumable == null);
+    }
+
+    public boolean useEquippedItem() {
+        if (equippedConsumable != null) {
+            this.consumeItem(equippedConsumable, false);
+            this.equippedConsumable = null;
+            return true;
+        } else {
+            return false;
+        }
     }
 
 }

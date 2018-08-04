@@ -61,6 +61,7 @@ public class Exchange {
 
         String in;
         int intIn;
+        Item ite;
         Boolean menu = true;
         while (menu) {
             printExchange();
@@ -85,20 +86,34 @@ public class Exchange {
             } else if (in.matches("^take(\\s+)(\\w+)$")) { //take wax
                 take(in.split("\\s+")[1].replace("_", " "), 1);
 
-            } else if (in.matches("^(ai(\\s+)(\\d+))|(additem(\\s+)(\\d+))$")) { //additem 3
+            } else if (in.matches("^(ai|additem)(\\s*)$")) { //additem
+                print("\n");
+                printTab();
+                println("Item ID:\n");
+                left.addItem(inputInt(scan));
+
+            } else if (in.matches("^((ai(\\s+)(\\d+))|(additem(\\s+)(\\d+)))(\\s*)$")) { //additem 3
                 left.addItem(Integer.parseInt(in.split("\\s+")[1]));
-            } else if (in.matches("^(ai(\\s+)(\\d+)(\\s+)(\\d+))|(additem(\\s+)(\\d+)(\\s+)(\\d+))$")) { //additem 3 4
+
+            } else if (in.matches("^((ai(\\s+)(\\d+)(\\s+)(\\d+))|(additem(\\s+)(\\d+)(\\s+)(\\d+)))(\\s*)$")) { //additem 3 4
+
                 left.addItem(Integer.parseInt(in.split("\\s+")[1]), Integer.parseInt(in.split("\\s+")[2]));
-            } else if (in.matches("^removeitem|ri$")) { //additem
+            } else if (in.matches("^(removeitem|ri)(\\s*)$")) { //removeitem
                 print("\n");
                 printTab();
                 println("Item ID:\n");
                 left.removeItem(inputInt(scan));
-            } else if (in.matches("^(ri(\\s+)(\\d+))|(removeitem(\\s+)(\\d+))$")) { //additem 3
+            } else if (in.matches("^((ri(\\s+)(\\d+))|(removeitem(\\s+)(\\d+)))(\\s*)$")) { //removeitem 3
                 left.removeItem(Integer.parseInt(in.split("\\s+")[1]));
-            } else if (in.matches("^(ri(\\s+)(\\d+)(\\s+)(\\d+))|(removeitem(\\s+)(\\d+)(\\s+)(\\d+))$")) { //additem 3 4
+            } else if (in.matches("^((ri(\\s+)(\\d+)(\\s+)(\\d+))|(removeitem(\\s+)(\\d+)(\\s+)(\\d+)))(\\s*)$")) { //removeitem 3 4
                 left.removeItem(Integer.parseInt(in.split("\\s+")[1]), Integer.parseInt(in.split("\\s+")[2]));
-
+            } else if (in.matches("^((ai(\\s+)(\\S+))|(additem(\\s+)(\\S+)))(\\s*)$")) { //additem itemname
+                left.addItem(in.split("\\s+")[1].replace("_", " "));
+            } else if (in.matches("^((ri(\\s+)(\\S+))|(removeitem(\\s+)(\\S+)))(\\s*)$")) { //remove itemname
+                ite = left.removeItem(in.split("\\s+")[1].replace("_", " "));
+                if (ite == null) {
+                    tprintln("Not a valid item.");
+                }
             } else {
                 error("Your input was misunderstood. Type >? or >help to view the manual.");
             }
@@ -118,7 +133,7 @@ public class Exchange {
 
         int arrayIndex = 0;
         for (ItemType t : ItemType.values()) {
-            for (Item i : left.getInventory().keySet()) {
+            for (Item i : left.list().keySet()) {
                 if (i.getType() != ItemType.Currency && i.getType() == t) {
                     leftKeys[arrayIndex] = i;
                     arrayIndex++;
@@ -127,7 +142,7 @@ public class Exchange {
         }
         arrayIndex = 0;
         for (ItemType t : ItemType.values()) {
-            for (Item i : right.getInventory().keySet()) {
+            for (Item i : right.list().keySet()) {
                 if (i.getType() != ItemType.Currency && i.getType() == t) {
                     rightKeys[arrayIndex] = i;
                     arrayIndex++;

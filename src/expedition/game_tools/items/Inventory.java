@@ -8,6 +8,7 @@ package expedition.game_tools.items;
 import static expedition.Other.*;
 import expedition.game_tools.items.Item;
 import expedition.game_tools.items.Item.ItemType;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
@@ -32,7 +33,7 @@ public class Inventory {
         return name;
     }
 
-    public HashMap<Item, Integer> getInventory() {
+    public HashMap<Item, Integer> list() {
         return inventory;
     }
 
@@ -41,35 +42,63 @@ public class Inventory {
         return inventory.get(key);
     }
 
+    public boolean containsItem(Item in) {
+        return inventory.containsKey(in);
+    }
+
     //additem alias for item object input.
     public int addItem(Item in) {
-        return addItem(in.getID());
+        if (in == null) {
+            return -1;
+        } else {
+            return addItem(in, 1);
+        }
     }
 
     //additem alias for single object.
     public int addItem(int in) {
-        return addItem(in, 1);
+        return addItem(Item.parseID(in), 1);
     }
 
+    //additem alias for single object.
+    public int addItem(int in, int quant) {
+        return addItem(Item.parseID(in), quant);
+    }
+
+    public int addItem(String in){
+        return addItem(in, 1);
+    }
+    
     //additem alias for item string input.
-    public int addItem(String in) {
+    public int addItem(String in, int quant) {
         Item item = Item.parseName(in);
-        if (item != null) {
-            return addItem(item.getID());
+        if (item == null) {
+            ArrayList<Item> candidates = new ArrayList<>();
+            for (Item i : Item.values()) {
+                if (i.getName().contains(in)) {
+                    candidates.add(i);
+                }
+            }
+
+            if (candidates.size() == 1) {
+                item = candidates.get(0);
+                return addItem(item, quant);
+            } else {
+                tprintln("[" + in.toLowerCase() + "] is not an item.");
+                return 0;
+            }
         } else {
-            printTab();
-            println("[" + in.toLowerCase() + "] is not an item.");
-            return 0;
+            return addItem(item, quant);
         }
     }
 
     //general case for additem based on ID
-    public int addItem(int in, int quant) {
+    public int addItem(Item in, int quant) {
         int numAdded = 0;
-        if (in > Item.lastID || in < 0) { // check if item exists
+        if (in == null) {
             println("ERROR - No Such Item");
         } else {
-            Item item = Item.parseID(in);
+            Item item = in;
             for (int i = 0; i < quant; i++) {
                 if (inventory.containsKey(item)) {
                     inventory.put(item, inventory.get(item) + 1);
@@ -79,12 +108,11 @@ public class Inventory {
                 totalWeight += item.getWeight();
                 numAdded++;
             }
-            print("\n");
-            printTab();
+            //print("\n");
             if (quant <= 1) {
-                //println("[" + item.toString() + "] has been added to your inventory. You now have " + inventory.get(item) + " of them.");
+                //tprintln("[" + item.toString() + "] has been added to your inventory. You now have " + inventory.get(item) + " of them.");
             } else {
-               // println("[" + item.toString() + "] has been added to your inventory " + numAdded + " times. You now have " + inventory.get(item) + " of them.");
+                //tprintln("[" + item.toString() + "] has been added to your inventory " + numAdded + " times. You now have " + inventory.get(item) + " of them.");
             }
 
         }
@@ -92,58 +120,77 @@ public class Inventory {
     }
 
     //removeitem alias for single object.
-    public int removeItem(int in) {
-        return removeItem(in, 1);
+    public Item removeItem(int in) {
+        return removeItem(Item.parseID(in), true);
+    }
+
+    //removeitem alias for single object.
+    public int removeItem(int in, int quant) {
+        Item item = null;
+        int count = 0;
+        for (int i = 0; i < quant; i++) {
+            item = removeItem(Item.parseID(in), true);
+            if (item != null) {
+                count++;
+            }
+        }
+        return count;
+
     }
 
     //additem alias for item object input.
-    public int removeItem(Item in) {
-        return removeItem(in.getID());
+    public Item removeItem(Item in) {
+        return removeItem(in, true);
     }
 
     //additem alias for item string input.
-    public int removeItem(String in) {
-        Item item = Item.parseName(in);
-        if (item != null) {
-            return removeItem(item.getID());
-        } else {
-            printTab();
-            println("[" + in.toLowerCase() + "] is not an item.");
-            return 0;
+    public Item removeItem(String in) {
+        ArrayList<Item> candidates = new ArrayList<>();
+        for (Item i : inventory.keySet()) {
+            if (i.getName().contains(in)) {
+                candidates.add(i);
+            }
         }
+        Item item = null;
+        if (candidates.size() == 1) {
+            item = candidates.get(0);
+        } else {
+            item = Item.parseName(in);
+        }
+        return removeItem(item, false);
     }
 
-    public int removeItem(int in, int quant) {
-        int numRemoved = 0;
-        if (in > Item.lastID || in < 0) { // check if item exists
-            println("ERROR - No Such Item");
-        } else {
-            Item item = Item.parseID(in);
-            print("\n");
-            for (int i = 0; i < quant; i++) {
-                if (inventory.containsKey(item)) {
-                    if (inventory.get(item) <= 1) {
-                        inventory.remove(item); // remove from inventory
-                    } else {
-                        inventory.put(item, (inventory.get(item) - 1)); // remove one
-                    }
-                    totalWeight -= item.getWeight();
-                    numRemoved++;
+    public Item removeItem(Item in, Boolean hidden) {
+        //int numRemoved = 0;
+        if (in == null) { // check if item exists
+            tprintln("ERROR - Not an item.", hidden);
+        } else if (in != null) {
+            //print("\n");
+            //for (int i = 0; i < quant; i++) {
+            if (inventory.containsKey(in)) {
+                if (inventory.get(in) <= 1) {
+                    inventory.remove(in); // remove from inventory
                 } else {
-                    printTab();
-                    //println("You don't have enough [" + item + "] to remove " + quant + " of them from your inventory.");
-                    break;
+                    inventory.put(in, (inventory.get(in) - 1)); // remove one
                 }
+                totalWeight -= in.getWeight();
+                //numRemoved++;
+            } else {
+                tprintln("You don't have any [" + in + "].", hidden);
+                //break;
+                return null;
             }
+            //}
 
-            printTab();
+            /*printTab();
             if (quant <= 1) {
                 //println("[" + item + "] has been removed from your inventory. You now have " + ((inventory.containsKey(item)) ? inventory.get(item) : "none") + " of them.");
             } else {
                 //println("[" + item + "] has been removed from your inventory " + numRemoved + " times. You now have " + ((inventory.containsKey(item)) ? inventory.get(item) : "none") + " of them.");
-            }
+            }*/
         }
-        return numRemoved;
+        //return numRemoved;
+        return in;
     }
 
     public int getTotalWeight() {

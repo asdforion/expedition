@@ -19,17 +19,22 @@ public class StatusEffect {
         STRFLAT,
         SPIFLAT,
         SPIPERCENT,
-        MAGFLAT,
-        MAGPERCENT,
         SPDFLAT,
         SPDPERCENT,
+        //
+        PHYSDAMAGEDONEFLAT,
+        PHYSDAMAGEDONEPERCENT,
         //amount of damage/healing/energy received.
-        DAMAGETAKENFLAT,
+        DAMAGETAKENFLAT, //DAMAGE
         DAMAGETAKENPERCENT,
-        HEALTAKENFLAT,
+        DAMAGEBLOCKEDFLAT, //ARMOR
+        DAMAGEBLOCKEDPERCENT,
+        HEALTAKENFLAT, //HEAL
         HEALTAKENPERCENT,
-        ENERGYRESTOREDFLAT,
+        ENERGYRESTOREDFLAT, //ENERGY RESTORE
         ENERGYRESTOREDPERCENT,
+        ENERGYSPENTFLAT, //ENERGY SPEND
+        ENERGYSPENTPERCENT,
         //stat regen per turn
         ENERGYTICK,
         HEALTICK,

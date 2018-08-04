@@ -7,6 +7,8 @@ import static expedition.Other.*;
 import expedition.game_tools.*;
 import expedition.game_tools.Environment.*;
 import expedition.game_tools.character_tools.*;
+import expedition.game_tools.items.Exchange;
+import expedition.game_tools.items.Item;
 import java.util.Scanner;
 
 public class Frame {
@@ -34,10 +36,10 @@ public class Frame {
 
         team = new Team(scan, expeditionName);
         team.newPlayerTeam();
-        
+
         enemies = new Team(scan, "Enemytesterly");
         enemies.newPlayerTeam();
-
+        initShop();
         inventory = new Inventory(expeditionName + "'s inventory");
 
         this.date = new Date(Month.Abb, 1);
@@ -80,6 +82,9 @@ public class Frame {
 
     private void trigger_NewDay() {
         team.updateBirthday(date);
+        for (Character i : team.list()) {
+            i.statusTickNonCombat();
+        }
     }
 
     //Daily Menu
@@ -88,17 +93,19 @@ public class Frame {
         String in;
         int intIn;
         boolean menu = true;
+        Character temp = null;
+        Item ite = null;
         while (menu) { // t | p | s | q | d | i
             print("\n---\n");
             in = input(scan).toLowerCase();
-            if (in.matches("^\\?|help$")) {
+            if (in.matches("^(\\?|help)(\\s*)$")) {
                 printHelp();
-            } else if (in.matches("^q|quit|exit|escape|leave$")) {
+            } else if (in.matches("^(q|quit|exit|escape|leave)(\\s*)$")) {
                 menu = false;
                 playing = false;
-            } else if (in.matches("^travelers|t$")) {
+            } else if (in.matches("^(travelers|t)(\\s*)$")) {
                 team.printTravelers(date);
-            } else if (in.matches("^pfe|embark|p$")) {
+            } else if (in.matches("^(pfe|embark|p)(\\s*)$")) {
                 willEmbark = !willEmbark;
                 if (willEmbark) {
                     print("\n");
@@ -109,41 +116,112 @@ public class Frame {
                     printTab();
                     println("Your travelers stop packing their things, and are no longer preparing to travel tomorrow.");
                 }
-            } else if (in.matches("^((sleep))|((s))$")) { //if(in.matches("^(sleep)(\\s)*(\\d)+$"))
+            } else if (in.matches("^(sleep|s)(\\s*)$")) { //if(in.matches("^(sleep)(\\s)*(\\d)+$"))
                 menu = false;
                 printSleep();
-            } else if (in.matches("^(((sleep)(\\s)*(-s))|((s)(\\s)*(-s)))$")) { //sleep -s || s -s
+            } else if (in.matches("^((sleep(\\s+)(-s))|((s)(\\s)*(-s)))(\\s*)$")) { //sleep -s || s -s
                 menu = false;
-            } else if (in.matches("^date|d$")) {
+            } else if (in.matches("^(date|d)(\\s*)$")) {
                 printDate();
-            } else if (in.matches("^weather$")) {
+            } else if (in.matches("^(weather|w)(\\s*)$")) {
                 printEnvironment(env);
-            } else if (in.matches("^ai|additem$")) { //additem
+            } else if (in.matches("^(ai|additem)(\\s*)$")) { //additem
                 print("\n");
                 printTab();
                 println("Item ID:\n");
                 inventory.addItem(inputInt(scan));
-            } else if (in.matches("^(ai(\\s+)(\\d+))|(additem(\\s+)(\\d+))$")) { //additem 3
+
+            } else if (in.matches("^((ai(\\s+)(\\d+))|(additem(\\s+)(\\d+)))(\\s*)$")) { //additem 3
                 inventory.addItem(Integer.parseInt(in.split("\\s+")[1]));
-            } else if (in.matches("^(ai(\\s+)(\\d+)(\\s+)(\\d+))|(additem(\\s+)(\\d+)(\\s+)(\\d+))$")) { //additem 3 4
+
+            } else if (in.matches("^((ai(\\s+)(\\d+)(\\s+)(\\d+))|(additem(\\s+)(\\d+)(\\s+)(\\d+)))(\\s*)$")) { //additem 3 4
+
                 inventory.addItem(Integer.parseInt(in.split("\\s+")[1]), Integer.parseInt(in.split("\\s+")[2]));
-            } else if (in.matches("^removeitem|ri$")) { //additem
+            } else if (in.matches("^(removeitem|ri)(\\s*)$")) { //removeitem
                 print("\n");
                 printTab();
                 println("Item ID:\n");
                 inventory.removeItem(inputInt(scan));
-            } else if (in.matches("^(ri(\\s+)(\\d+))|(removeitem(\\s+)(\\d+))$")) { //additem 3
+            } else if (in.matches("^((ri(\\s+)(\\d+))|(removeitem(\\s+)(\\d+)))(\\s*)$")) { //removeitem 3
                 inventory.removeItem(Integer.parseInt(in.split("\\s+")[1]));
-            } else if (in.matches("^(ri(\\s+)(\\d+)(\\s+)(\\d+))|(removeitem(\\s+)(\\d+)(\\s+)(\\d+))$")) { //additem 3 4
+            } else if (in.matches("^((ri(\\s+)(\\d+)(\\s+)(\\d+))|(removeitem(\\s+)(\\d+)(\\s+)(\\d+)))(\\s*)$")) { //removeitem 3 4
                 inventory.removeItem(Integer.parseInt(in.split("\\s+")[1]), Integer.parseInt(in.split("\\s+")[2]));
-            } else if (in.matches("^inventory|i|items$")) {
+            } else if (in.matches("^((ai(\\s+)(\\S+))|(additem(\\s+)(\\S+)))(\\s*)$")) { //additem itemname
+                inventory.addItem(in.split("\\s+")[1].replace("_", " "));
+            } else if (in.matches("^((ri(\\s+)(\\S+))|(removeitem(\\s+)(\\S+)))(\\s*)$")) { //remove itemname
+                ite = inventory.removeItem(in.split("\\s+")[1].replace("_", " "));
+                if (ite == null) {
+                    tprintln("Not a valid item.");
+                }
+            } else if (in.matches("^(inventory|i|items)(\\s*)$")) {
                 inventory.printInventory();
-            } else if (in.matches("^test$")) {
+            } else if (in.matches("^(test)(\\s*)$")) {
                 tester();
-            } else if (in.matches("^trav(\\s+)(\\d+)$")) {
-                team.printTravelerVerbose(team.get(Integer.parseInt(in.split("\\s+")[1])), date);
-            } else if (in.matches("^exp(\\s+)(\\d+)(\\s+)(\\d+)$")) {
+            } else if (in.matches("^(test2)(\\s*)$")) {
+                tester2();
+            } else if (in.matches("^trav(\\s+)(\\d+)(\\s*)$")) {
+                temp = team.get(Integer.parseInt(in.split("\\s+")[1]));
+                if (temp != null) {
+                    temp.printTravelerVerbose(date);
+                } else {
+                    error("Not a valid traveler.");
+                }
+            } else if (in.matches("^exp(\\s+)(\\d+)(\\s+)(\\d+)(\\s*)$")) {
                 addExperience(Integer.parseInt(in.split("\\s+")[1]), Integer.parseInt(in.split("\\s+")[2]));
+
+            } else if (in.matches("^(equip(\\s+)(.+)(\\s+)(\\d+))(\\s*)$")) { //equip item_name trav# 
+                tprintln("");
+                ite = inventory.removeItem((in.split("\\s+")[1].replace("_", " ")));
+                if (ite != null) {
+                    temp = team.get(Integer.parseInt(in.split("\\s+")[2]));
+                    if (temp != null) {
+                        temp.equipItem(ite, inventory);
+                    } else {
+                        tprintln("Not a valid traveler.");
+                    }
+                }
+            } else if (in.matches("^(unequip(\\s+)(.+)(\\s+)(\\d+)(\\s*))$")) { //unequip item_name trav#
+                tprintln("");
+                temp = team.get(Integer.parseInt(in.split("\\s+")[2]));
+                if (temp != null) {
+                    ite = temp.unequipItem((in.split("\\s+")[1].replace("_", " ")));
+                    if (ite != null) {
+                        inventory.addItem(ite);
+                    } else {
+                        tprintln("Not a valid item.");
+                    }
+                } else {
+                    tprintln("Not a valid traveler.");
+                }
+            } else if (in.matches("^(consume(\\s+)(.+)(\\s+)(\\d+)(\\s*))$")) { //consume item_name trav#
+                tprintln("");
+                temp = team.get(Integer.parseInt(in.split("\\s+")[2]));
+                if (temp != null) {
+                    ite = inventory.removeItem(in.split("\\s+")[1].replace("_", " "));
+                    if (ite != null) {
+                        temp.consumeItem(ite, false);
+                    }
+                } else {
+                    tprintln("Not a valid traveler.");
+                }
+            } else if (in.matches("^(damage(\\s+)(\\d+)(\\s+)(\\d+)(\\s*))$")) { //damage damage# trav#
+                tprintln("");
+                temp = team.get(Integer.parseInt(in.split("\\s+")[2]));
+                if (temp != null) {
+                    temp.takeDamage(Integer.parseInt(in.split("\\s+")[1].replace("_", " ")), Type.Normal, false);
+                } else {
+                    tprintln("Not a valid traveler.");
+                }
+            } else if (in.matches("^(spend(\\s+)(\\d+)(\\s+)(\\d+)(\\s*))$")) { //spend spend# trav#
+                tprintln("");
+                temp = team.get(Integer.parseInt(in.split("\\s+")[2]));
+                if (temp != null) {
+                    temp.spendEnergy(Integer.parseInt(in.split("\\s+")[1].replace("_", " ")), false);
+                } else {
+                    tprintln("Not a valid traveler.");
+                }
+            } else if (in.matches("^(listitems|li)(\\s*)$")) {
+                Item.printItems();
             } else {
                 print("\n");
                 printTab();
@@ -153,8 +231,8 @@ public class Frame {
             //end of while(menu)
         } // end of menu()
     }
-
     //Prints help menu.
+
     private void printHelp() {
         print("\n");
         printTab();
@@ -338,7 +416,11 @@ public class Frame {
     }
 
     private void tester() throws InterruptedException {
-        Encounter en = new Encounter(team, enemies);
+        Encounter en = new Encounter(team, enemies, date, scan);
+    }
+
+    private void tester2() throws InterruptedException {
+        Exchange ex = new Exchange(inventory, other, false, scan);
     }
 
     private void addExperience(int which, int exp) {
