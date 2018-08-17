@@ -223,9 +223,7 @@ public class Frame {
             } else if (in.matches("^(listitems|li)(\\s*)$")) {
                 Item.printItems();
             } else {
-                print("\n");
-                printTab();
-                println("Your input was misunderstood. Type >? or >help to view the manual.");
+                error("Your input was misunderstood. Type >? or >help to view the manual.");
             }
 
             //end of while(menu)

@@ -47,6 +47,11 @@ public class Expedition {
 		return "";
 	}
 
+	public static void enter(Scanner scan) throws InterruptedException {
+		print("...");
+		scan.nextLine();
+	}
+	
 	public static String input(Scanner scan) throws InterruptedException {
 		print("> ");
 		String text = scan.nextLine();
